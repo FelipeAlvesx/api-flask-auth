@@ -3,7 +3,7 @@ from secret import SECRET_KEY
 from models.users import User
 from database import db
 from login_meneger_file import login_manager
-from flask_login import login_user, current_user
+from flask_login import login_user, current_user, logout_user, login_required
 
 app = Flask(__name__)
 
@@ -29,13 +29,37 @@ def login():
     
     if email and password:
         user = User.query.filter_by(email=email).first()
-        if user and user.password == password:
+        if user and user.check_password(password):
             login_user(user) # authentication
             print(current_user.is_authenticated)
             return jsonify({"message": "login successfuly"})
     
     return jsonify({"message": "invalid credentials"}), 400
 
+
+@app.route("/user", methods=["POST"])
+def create_user():
+    data = request.json
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+
+    if email and password:
+        user = User(username=username, email=email, password=password)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+
+        return jsonify({"message": "create"})
+
+    return jsonify({"message": "invalid credentials"}), 400
+
+
+@app.route("/logout", methods=["GET"])
+@login_required
+def logout():
+    logout_user()
+    return jsonify({"message": "Logout successfuly"})
 
 if __name__ == "__main__":
     app.run(

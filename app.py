@@ -3,7 +3,7 @@ from secret import SECRET_KEY
 from models.users import User
 from database import db
 from login_meneger_file import login_manager
-from flask_login import login_user
+from flask_login import login_user, current_user
 
 app = Flask(__name__)
 
@@ -12,12 +12,12 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 
 db.init_app(app)
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'login' # View login
 
 
-@app.route("/hello-wolrd", methods=["GET"])
-def hello_world():
-    return "HELLO WORLD"
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)
 
 
 @app.route("/login", methods=["POST"])
@@ -31,6 +31,7 @@ def login():
         user = User.query.filter_by(email=email).first()
         if user and user.password == password:
             login_user(user) # authentication
+            print(current_user.is_authenticated)
             return jsonify({"message": "login successfuly"})
     
     return jsonify({"message": "invalid credentials"}), 400

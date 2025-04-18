@@ -55,11 +55,79 @@ def create_user():
     return jsonify({"message": "invalid credentials"}), 400
 
 
+
+@app.route("/user/<int:id_user>", methods=["GET"])
+@login_required
+def get_user(id_user):
+    user = User.query.get(id_user)
+
+    if user:
+        user = User.query.get(id_user)
+
+        if user.username and user.email and user.password:
+            return jsonify({"username": user.username, "email": user.email})
+        
+        elif user.username and user.password:
+            return jsonify({"username": user.username})
+        
+        elif user.email and user.password:
+            return jsonify({"email": user.email})
+        
+
+    return jsonify({"message": "not found"}), 404
+
+
+
+@app.route("/user/<int:id_user>", methods=["PUT"])
+@login_required
+def update_user(id_user):
+    data = request.json
+    password = data.get("password")
+    username = data.get("username") 
+    user = User.query.get(id_user)
+    # CURRENT USER
+
+    if data.get("email"):
+        return jsonify({"message": "email cannot be changed"}), 403
+    
+
+    if user and (password or username):
+        if username:
+            user.username = username
+        if password:
+            user.password = password
+            user.set_password(password)
+            
+        db.session.commit()
+
+        
+        return jsonify({"message": f"update user succesfuly - ID {id_user}"})
+             
+
+    return jsonify({"message": "not found"}), 404
+
+
+@app.route("/user/<int:id_user>", methods=["DELETE"])
+def delete_user(id_user):
+    user = User.query.get(id_user)
+    
+    if id_user == current_user.id:
+        return jsonify({"message": "logged in users cannot be deleted"}), 403
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+
+        return jsonify({"message": f"user deleted ID - {id_user}"})
+
+    return jsonify({"message": "not found"}), 404
+
 @app.route("/logout", methods=["GET"])
 @login_required
 def logout():
     logout_user()
     return jsonify({"message": "Logout successfuly"})
+
+
 
 if __name__ == "__main__":
     app.run(
